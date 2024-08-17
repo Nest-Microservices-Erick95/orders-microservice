@@ -1,0 +1,57 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  DELIVERED
+  CANCELLED
+}
+
+model Order {
+  id String @id @default(uuid()) 
+  totalAmount Float
+  totalItems Int
+  status OrderStatus @default(PENDING) 
+  paid Boolean @default(false)
+  paidAt DateTime? 
+  stripeChargeId String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  orderItem OrderItem[] //relacion uno a muchos con la tabla OrderItem
+  OrderReceipt OrderReceipt? //relacion uno a uno con la tabla OrderReceipt
+}
+
+model OrderItem {
+  id String @id @default(uuid())
+  productId Int 
+  quantity Int
+  price Float 
+  
+  order Order? @relation(fields: [orderId], references: [id]) //con esta y la siguiente linea se hace la relacion muchos a uno con la tabla Order
+  orderId String? 
+}
+
+model OrderReceipt {
+  id String @id @default(uuid())
+  order Order @relation(fields: [orderId], references: [id]) //con esta y la siguiente linea es como se pone una relacion uno a uno con la tabla Order, en la cual la referencia del foreign key (con la tabla Order) estará en esta tabla de OrderReceipt
+  orderId String @unique
+
+  receiptUrl String //para guardar la url del recibo de pago generado por stripe en el proyecto de payments-ms despues de hacer un pago
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
