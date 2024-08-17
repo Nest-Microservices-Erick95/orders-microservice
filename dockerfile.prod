@@ -110,6 +110,7 @@
 
 
 ##VERSION 3 DE ESTE DOCKERFILE (OJO que esta version 3 es en realidad la misma que la version 1 de arriba, todo lo mismo, solo que para respetar lo que yo había explicado de la version 1 y 2 de este archivo pues por eso no simplemente descomenté la version 1 de arriba sino que mejor para no generar confusiones con las explicaciones que puse en este archivo y otros archivos mejor puse esta version 3 que es lo mismo que la version 1, al final nos quedamos con esta version para hacer todo tal cual lo hizo el profesor en el curso y no tengamos problemas, especialmente en la parte de google cloud del curso que se ven en los videos puestos en la NOTA.txt de la carpeta 03-products-app, esto se puso ya fue cuando vimos lo del tema de google cloud):
+##Checar la NOTA ARG GOOGLE CLOUD de arriba de la version 2 de este dockerfile.prod
 
 #dependencias, solo generar la carpeta de node_modules
 FROM node:18.20.4-alpine3.20 as deps
