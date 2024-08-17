@@ -23,6 +23,8 @@ async function bootstrap() {
       forbidNonWhitelisted: true, 
     }) 
   );
+
+  console.log('Cambio para probar trigger de google cloud');
   
   await app.listen();
   logger.log(`Orders microservice running on port ${envs.port}`);
