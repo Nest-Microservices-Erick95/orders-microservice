@@ -1,0 +1,53 @@
+##VERSION 1 DE ESTE ARCHIVO (se explica por qué se comentó esta version 1 y por qué se puso la version 2 de abajo de este archivo en la NOTA ARG GOOGLE CLOUD del dockerfile.prod del orders-ms)
+
+# steps:
+#   - name: "gcr.io/cloud-builders/docker"
+#     args:
+#       [
+#         "build",
+#         "-t",
+#         "northamerica-northeast1-docker.pkg.dev/tienda-microservices-432723/image-registry/orders-ms",
+#         "-f",
+#         "dockerfile.prod",
+#         "--platform=linux/amd64",
+#         ##Las siguientes 2 lineas se explica en la NOTA ARG GOOGLE CLOUD del dockerfile.prod del orders-ms
+#         # "--build-arg",
+#         # "DATABASE_URL=postgresql://orders-db_owner:AyxgZ5q3PlEJ@ep-frosty-heart-a5qyq50s.us-east-2.aws.neon.tech/orders-db?sslmode=require"
+#         ".",
+#       ]
+#   - name: "gcr.io/cloud-builders/docker"
+#     args:
+#       [
+#         "push",
+#         "northamerica-northeast1-docker.pkg.dev/tienda-microservices-432723/image-registry/orders-ms",
+#       ]
+# options:
+#   logging: CLOUD_LOGGING_ONLY
+
+
+
+
+##VERSION 2 DE ESTE ARCHIVO (se explica por qué se comentó lo de arriba y por qué se puso esta version 2 de este archivo en la NOTA ARG GOOGLE CLOUD del dockerfile.prod del orders-ms)
+
+steps:
+- name: 'gcr.io/cloud-builders/docker'
+  entrypoint: 'bash'
+  args:
+    - -c
+    - |
+      docker build -t northamerica-northeast1-docker.pkg.dev/tienda-microservices-432723/image-registry/orders-ms -f dockerfile.prod --platform=linux/amd64 --build-arg ORDERS_DATABASE_URL=$$DATABASE_URL .
+  secretEnv: ['DATABASE_URL']
+
+- name: 'gcr.io/cloud-builders/docker'
+  args:
+    [
+      'push',
+      'northamerica-northeast1-docker.pkg.dev/tienda-microservices-432723/image-registry/orders-ms',
+    ]
+options:
+  logging: CLOUD_LOGGING_ONLY
+
+availableSecrets:
+  secretManager:
+  - versionName: projects/156451301007/secrets/ORDERS_DATABASE_URL/versions/1
+    env: 'DATABASE_URL'

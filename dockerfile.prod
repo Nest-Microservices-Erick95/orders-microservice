@@ -71,32 +71,104 @@
 
 #NOTA PRISMA PROD: Arriba vimos en la version 1 de este dockerfile cómo tener este dockerfile con prisma pero la migracion de prisma para tener las tablas en la base de datos con el comando de prisma migrate lo ejecutamos arriba a nivel de la imagen cuando se construye la imagen, pero en esta version 2 de este dockerfile como se ve abajo la migracion con el prisma migrate la ejecutamos a nivel de contenedor con el cmd, ya que en el CMD de abajo ejecutamos el comando npm run start:migrate:prod , y eso de start:migrate:prod es un comando que nosotros creamos en el package.json del orders-ms , el cual si nos fijamos en ese package.json tiene como valor "prisma migrate deploy && prisma generate && npm run start:prod" , entonces ahi es donde ejecutamos lo del prisma migrate y lo del prisma generate, y tambien ahi ejecutamos el npm run start:prod , lo cual con el start:prod tenemos el comando de "node dist/main" en ese package.json , osea igual terminaríamos ejecutamos lo del node dist/main que tenemos en el CMD de la version 1 de arriba pero ahora lo del prisma migrate y prisma generate asi se eejcutarían ya a nivel de contenedor y ya no a nivel de imagen como se tenía en la version 1 de arriba, y asi en el service del contenedor de orders-ms en el docker-compose.prod.yaml de la carpeta 03-products-app de este curso ya no necesitaríamos ahi poner lo del args como se necesitaba con la version 1 de arriba, ni lo del ENV de la version 1 de arriba (se explica eso del args y ENV en la NOTA ARGS Y ENV de ese docker-compose.prod.yaml), se puede hacer de ambas formas cuando tenemos ya la base de datos en produccion, osea en la nube (como se recomienda en produccion), como pasa en este orders-ms, y asi con esta version 2 en el service del orders-ms en el docker-compose.prod.yaml de la carpeta 03-products-app solo necesitamos las variables de entorno a nivel del contenedor, osea la parte del environment ahi, y por eso ya no necesitamos el args ni el ENV en este dockerfile.prod como pasaba arriba
 
-FROM node:18.20.4-alpine3.20 AS builder
+# FROM node:18.20.4-alpine3.20 AS builder
+
+# WORKDIR /usr/src/app
+
+# COPY package*.json ./
+# #en la anterior linea se usa un regex, ya que al poner package*.json eso incluye el package.json y el package-lock.json , osea incluye desde el package en adelante y al final el .json 
+# COPY prisma ./prisma/
+
+# RUN npm install
+
+# COPY . .
+
+# #OJO que el comando de npx prisma generate no necesita de la variable de entorno de DATABASE_URL, el que sí necesita de esa variable de entorno es el de npx prisma migrate dev o npx prisma migrate deploy
+# RUN npx prisma generate
+
+# RUN npm run build
+
+# #------------------------------------------------------------------------------------------
+
+# FROM node:18.20.4-alpine3.20 AS prod
+
+# #NOTA ARG GOOGLE CLOUD: Las 3 siguientes lineas no son necesarias para esta version 2 de este dockerfile.prod, solo se ocupan en la version 1 que se comentó arriba, aunque aqui se pusieron para probar que funcionara bien la parte del secret en google cloud, ya en la parte de google cloud del curso, ya que en el curso se hizo de la forma de la version 1 de arriba y por eso de hecho se usó el secret de google cloud para establecer el arg de ORDERS_DATABASE_URL para la construccion de esta imagen en google cloud ya que localmente en nuestra computadora pues teníamos ese arg establecido en el archivo .env y el archivo docker-compose.prod.yml ambos en la raiz de la carpeta 03-products-app y esta carpeta de products-launcher , pero en google cloud como se ve en los videos de ese tema en la NOTA.txt de la carpeta 03-products-app no se tienen en google cloud, para construirlas con el cloudbuild.yml de este proyecto de orders-ms (ese archivo se puso por la parte del google cloud que se ven en los videos puestos de google cloud en la NOTA.txt de la carpeta 03-products-app, el cual sirve para construir la imagen y hacer el push automaticamente con un trigger de google cloud y asi implementar lo del CI/CD usando google cloud y github) no se tiene ese arg de ORDERS_DATABASE_URL , entonces lo que podemos hacer es simplemente en la version 1 de ese archivo de cloudbuild.yml del orders-ms poner lo que se ve ahi de "--build-arg" y ya asi le estableceríamos ese arg que se ve despues de "DATABASE_URL=" y con su valor de la url de la base de datos en la nube, asi podemos establecer args en ese archivo de cloudbuild.yml para construir la imagen en google cloud sin tener que usar secrets, pero el problema ahi es que asi pondríamos el username y la contraseña y toda esa url de la base de datos en produccion en ese archivo, y ese archivo de cloudbuild.yml debe estar en github para que se pueda leer el trigger del google cloud e implementar lo del CI/CD de google cloud con docker, y pues asi en github expondríamos esa informacion de la base de datos de produccion, entonces por eso fue que usamos el secret de google cloud para tener ahi en el secret de google cloud almacenado ese valor de esa url de la base de datos de produccion, y ya traerlo ese valor para el arg en el cloudbuild.yml de nuestro proyecto, y y por eso fue que se hizo la version 2 que se ve en ese cloudbuild.yml del orders-ms , porque asi con el secret de google cloud se deben hacer algunas modificaciones a ese archivo, y entonces asi con esa version 2 del cloudbuild.yml del orders-ms es que funcionaría la version 1 de este dockerfile.prod del orders-ms , pero como dijimos en esta version 2 de este dockerfile.prod del orders-ms no se ocupa ese arg ya que eso de tener ese valor de la url de la base de datos en produccion lo hacemos a nivel de contenedor con variables de entorno y ya no a nivel de la imagen con args, pero aun asi pusimos lo de las siguientes 3 lineas para saber si eso está funcionando correctamente usando lo del RUN echo de abajo para imprimir en la consola al construirse esta imagen ese valor del arg, para eso funciona ese RUN echo para hacer ese debug pues para ver si estamos recibiendo el valor correcto de ese arg, esto se ve mas bien en los videos de la NOTA.txt de la carpeta 03-products-app de este curso
+# ARG ORDERS_DATABASE_URL
+# ENV DATABASE_URL=$ORDERS_DATABASE_URL
+# RUN echo "database_url ::: $ORDERS_DATABASE_URL"
+
+# COPY --from=builder /usr/src/app/node_modules ./node_modules
+# COPY --from=builder /usr/src/app/package*.json ./
+# COPY --from=builder /usr/src/app/dist ./dist
+# COPY --from=builder /usr/src/app/prisma ./prisma
+
+# EXPOSE 3002
+
+# CMD ["npm", "run", "start:migrate:prod"]
+
+
+
+
+##VERSION 3 DE ESTE DOCKERFILE (OJO que esta version 3 es en realidad la misma que la version 1 de arriba, todo lo mismo, solo que para respetar lo que yo había explicado de la version 1 y 2 de este archivo pues por eso no simplemente descomenté la version 1 de arriba sino que mejor para no generar confusiones con las explicaciones que puse en este archivo y otros archivos mejor puse esta version 3 que es lo mismo que la version 1, al final nos quedamos con esta version para hacer todo tal cual lo hizo el profesor en el curso y no tengamos problemas, especialmente en la parte de google cloud del curso que se ven en los videos puestos en la NOTA.txt de la carpeta 03-products-app, esto se puso ya fue cuando vimos lo del tema de google cloud):
+
+#dependencias, solo generar la carpeta de node_modules
+FROM node:18.20.4-alpine3.20 as deps
 
 WORKDIR /usr/src/app
 
-COPY package*.json ./
-#en la anterior linea se usa un regex, ya que al poner package*.json eso incluye el package.json y el package-lock.json , osea incluye desde el package en adelante y al final el .json 
-COPY prisma ./prisma/
+COPY package.json .
+COPY package-lock.json .
 
 RUN npm install
 
+#---------------------------------------------------------------------------
+
+#builder, construye la aplicacion
+FROM node:18.20.4-alpine3.20 as build
+
+#Las siguientes 2 lineas se explican en la NOTA ARGS Y ENV del docker.compose.prod.yaml que está en la carpeta 03-products-app de este curso
+ARG ORDERS_DATABASE_URL
+ENV DATABASE_URL=$ORDERS_DATABASE_URL
+
+RUN echo "database_url ::: $ORDERS_DATABASE_URL"
+
+WORKDIR /usr/src/app
+
+#copiar desde deps los modulos de node
+COPY --from=deps /usr/src/app/node_modules ./node_modules
+
 COPY . .
 
-#OJO que el comando de npx prisma generate no necesita de la variable de entorno de DATABASE_URL, el que sí necesita de esa variable de entorno es el de npx prisma migrate dev o npx prisma migrate deploy
+#se hace la migracion de prisma, y cuando se hace en produccion con una base de datos en la nube por ejemplo se pone deploy en lugar de dev. Y esto en realidad tambien genera el cliente de prisma, por lo tanto ya no sería necesario poner el npx prisma generate de abajo pero pues igual lo pusimos para ver bien todo. Este comando de aqui hará que se reflejen las tablas definidas en los model del schema.prisma de nuestro proyecto en la base de datos en la nube, porque sin esto no tendremos las tablas en la base de datos
+RUN npx prisma migrate deploy
+
+#genera el cliente de prisma y lo almacena en el node_modules, los cuales se copian a la parte final de abajo con la carpeta node_modules, y esto se debe hacer antes de crear la carpeta de dist con el npm run build de abajo
 RUN npx prisma generate
 
+#crear la carpeta dist donde se tiene el codigo de produccion
 RUN npm run build
 
-#------------------------------------------------------------------------------------------
+#para dejar solo las dependencias de produccion, aunque esto es opcional pero disminuye el peso de la imagen
+RUN npm ci -f --only=production && npm cache clean --force
 
-FROM node:18.20.4-alpine3.20 AS prod
+#---------------------------------------------------------------------------
 
-COPY --from=builder /usr/src/app/node_modules ./node_modules
-COPY --from=builder /usr/src/app/package*.json ./
-COPY --from=builder /usr/src/app/dist ./dist
-COPY --from=builder /usr/src/app/prisma ./prisma
+#crear la imagen final
+FROM node:18.20.4-alpine3.20 as prod
+
+WORKDIR /usr/src/app
+
+#copiar la carpeta de node_modules ya que es necesaria para ejecutar el codigo de produccion de la carpeta dist
+COPY --from=build /usr/src/app/node_modules ./node_modules
+
+COPY --from=build /usr/src/app/dist ./dist
+
+#la siguiente variable de entorno es opcional pero pues indica que estamos en produccion, se suele poner en produccion
+ENV NODE_ENV=production
+
+#con lo siguiente creamos el usuario llamado node (puede tener cualquier nombre) y ese será el que ejecutará el comando del CMD de abajo, osea el que ejecutará nuestra aplicacion en el contenedor de esta imagen, esto es opcional pero se puso como medida de seguridad porque si no ponemos esto entonces lo ejecutaría el usuario root que viene con la imagen de node del FROM de arriba, pero si hacemos eso entonces alguien podría entrar a nuestro contenedor y detener la ejecucion de nuestra aplicacion o borrar algo y cosas asi, pero si lo hacemos con un usuario creado aqui que no sea el root entonces ya no tendríamos ese problema, esto como medida de seguridad pero pues es opcional, esto es asi como se explicó porque con esto tambien nos movemos a este usuario y dentro del contenedor ya no estaremos con el usuario de root, y pues este usuario de node no tiene privilegios para eliminar cosas y asi, en cambio el usuario de root sí tiene esos privilegios y por eso asi ya nos evitaríamos que alguien entre a nuestro contenedor y borre cosas por ejemplo
+USER node
 
 EXPOSE 3002
 
-CMD ["npm", "run", "start:migrate:prod"]
+CMD ["node", "dist/main.js"]
